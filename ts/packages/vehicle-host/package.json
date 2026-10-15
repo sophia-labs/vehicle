@@ -1,0 +1,41 @@
+{
+	"name": "@sophia-labs/vehicle-host",
+	"version": "0.0.0",
+	"description": "Vehicle's agent host: pi sessions behind the ride protocol v2 (lease, durable commands, watch, capsule).",
+	"license": "MIT",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=22.19.0"
+	},
+	"bin": {
+		"vehicle-host": "./dist/main.js"
+	},
+	"exports": {
+		".": {
+			"sophia-source": "./src/index.ts",
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"LICENSE"
+	],
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"start": "node dist/main.js",
+		"dev": "node --conditions=sophia-source src/main.ts",
+		"test": "node --conditions=sophia-source --test --test-concurrency=1 test/*.test.ts"
+	},
+	"dependencies": {
+		"@earendil-works/pi-agent-core": "1.2.0",
+		"@earendil-works/pi-ai": "1.2.0",
+		"@earendil-works/pi-coding-agent": "1.2.0",
+		"@sophia-labs/pi-sophia": "workspace:*"
+	},
+	"devDependencies": {
+		"typebox": "1.3.27"
+	}
+}

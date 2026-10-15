@@ -1,0 +1,12 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://sophia-labs.dev/schemas/vehicle-ride/v2/lease.request.json",
+	"title": "POST /sessions/:id/claim and /release",
+	"type": "object",
+	"required": ["requestId"],
+	"properties": {
+		"requestId": { "type": "string", "minLength": 1, "maxLength": 256 },
+		"ttlMs": { "type": "integer", "minimum": 1000, "maximum": 86400000, "description": "claim only; default 1800000" },
+		"takeover": { "type": "boolean", "default": false, "description": "claim only: take the lease from another client of the same principal (its lease is revoked); another principal's lease is never taken" }
+	}
+}

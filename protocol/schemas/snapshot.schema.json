@@ -1,0 +1,65 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://sophia-labs.dev/schemas/vehicle-ride/v2/snapshot.json",
+	"title": "GET /sessions/:id (inspect): the session.snapshot frame's value",
+	"type": "object",
+	"required": ["cursor", "session", "commands", "queue", "chimes", "transcript", "tools"],
+	"properties": {
+		"cursor": { "type": "integer", "minimum": 0 },
+		"session": {
+			"type": "object",
+			"required": ["sessionId", "graphId", "profile", "access", "model", "createdAt", "updatedAt", "status", "cursor", "budget", "lease", "roomPolicy"],
+			"properties": {
+				"title": { "type": "string", "maxLength": 200 },
+				"preview": { "type": "string" },
+				"profile": { "enum": ["chat", "agent"] },
+				"isolation": { "enum": ["none", "bwrap", "seatbelt", "microvm"], "description": "agent sessions: the box their body runs in" },
+				"lease": {
+					"anyOf": [
+						{ "type": "null" },
+						{ "type": "object", "required": ["clientId", "claimedAt", "expiresAt"], "additionalProperties": false, "properties": { "clientId": { "type": "string" }, "claimedAt": { "type": "string" }, "expiresAt": { "type": "string" } } }
+					]
+				}
+			}
+		},
+		"commands": { "type": "array" },
+		"queue": { "type": "array" },
+		"chimes": { "type": "array" },
+		"transcript": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["entryId", "role", "text", "timestamp"],
+				"properties": {
+					"entryId": { "type": "string" },
+					"role": { "type": "string", "description": "pi's message role: user, assistant, toolResult (and pi's own kinds)" },
+					"text": { "type": "string" },
+					"timestamp": {
+						"type": "string",
+						"pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$",
+						"description": "When pi recorded the entry (its session file's own timestamp): a user turn when it was taken, a step of a reply when it ended."
+					},
+					"toolCalls": { "type": "array", "items": { "type": "object", "required": ["name"] } },
+					"toolName": { "type": "string" },
+					"isError": { "type": "boolean" },
+					"stopReason": { "type": "string" }
+				}
+			}
+		},
+		"stats": { "type": "object" },
+		"mirror": {
+			"type": "object",
+			"description": "The session mirror: the session's record as a Garden document in its graph (_sophia/Conversations), or why there is none.",
+			"required": ["state"],
+			"properties": {
+				"state": { "enum": ["off", "skipped", "pending", "written", "failed"] },
+				"documentId": { "type": "string" },
+				"folder": { "type": "string" },
+				"reason": { "type": "string" },
+				"writtenAt": { "type": "string" },
+				"error": { "type": "string" }
+			}
+		},
+		"tools": { "anyOf": [{ "type": "null" }, { "type": "array", "items": { "type": "string" } }] }
+	}
+}

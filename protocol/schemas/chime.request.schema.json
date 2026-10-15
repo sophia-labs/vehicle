@@ -1,0 +1,13 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://sophia-labs.dev/schemas/vehicle-ride/v2/chime.request.json",
+	"title": "POST /sessions/:id/chimes",
+	"type": "object",
+	"required": ["requestId", "author", "text"],
+	"properties": {
+		"requestId": { "type": "string", "minLength": 1, "maxLength": 256 },
+		"author": { "type": "string", "pattern": "^[A-Za-z0-9 _.-]{1,64}$" },
+		"delivery": { "enum": ["prompt", "follow_up", "steer"], "default": "follow_up" },
+		"text": { "type": "string", "minLength": 1, "maxLength": 16000 }
+	}
+}

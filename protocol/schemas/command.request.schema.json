@@ -1,0 +1,26 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://sophia-labs.dev/schemas/vehicle-ride/v2/command.request.json",
+	"title": "POST /sessions/:id/commands",
+	"type": "object",
+	"required": ["requestId", "op"],
+	"properties": {
+		"requestId": { "type": "string", "minLength": 1, "maxLength": 256, "description": "the idempotency key; also the commandId unless one is given" },
+		"op": {
+			"enum": ["prompt", "follow_up", "steer", "abort", "cancel", "shutdown", "fork", "clone", "set_room_policy", "accept_chime", "reject_chime"]
+		},
+		"commandId": { "type": "string", "minLength": 1, "maxLength": 256, "description": "the command's id; for cancel, the command to cancel" },
+		"text": { "type": "string", "minLength": 1, "maxLength": 65536 },
+		"contextRefs": { "type": "array", "maxItems": 100, "items": { "type": "string", "minLength": 1 } },
+		"entryId": { "type": "string", "minLength": 1, "description": "fork: the pi entry id of a user message" },
+		"policy": { "enum": ["observe", "suggest", "co-drive", "mute"] },
+		"chimeId": { "type": "string", "minLength": 1 }
+	},
+	"allOf": [
+		{ "if": { "properties": { "op": { "enum": ["prompt", "follow_up", "steer"] } } }, "then": { "required": ["text"] } },
+		{ "if": { "properties": { "op": { "const": "cancel" } } }, "then": { "required": ["commandId"] } },
+		{ "if": { "properties": { "op": { "const": "fork" } } }, "then": { "required": ["entryId"] } },
+		{ "if": { "properties": { "op": { "const": "set_room_policy" } } }, "then": { "required": ["policy"] } },
+		{ "if": { "properties": { "op": { "enum": ["accept_chime", "reject_chime"] } } }, "then": { "required": ["chimeId"] } }
+	]
+}

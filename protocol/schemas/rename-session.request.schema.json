@@ -1,0 +1,16 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://sophia-labs.dev/schemas/vehicle-ride/v2/rename-session.request.json",
+	"title": "PATCH /sessions/:id",
+	"type": "object",
+	"required": ["title"],
+	"additionalProperties": false,
+	"properties": {
+		"requestId": { "type": "string", "minLength": 1, "maxLength": 256, "description": "optional; echoed in the frame" },
+		"title": {
+			"type": ["string", "null"],
+			"maxLength": 200,
+			"description": "The conversation's name; whitespace runs become one space, then trimmed. Null or empty clears it (the list shows the preview)."
+		}
+	}
+}

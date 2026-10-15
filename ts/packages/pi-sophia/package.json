@@ -1,0 +1,32 @@
+{
+	"name": "@sophia-labs/pi-sophia",
+	"version": "0.0.0",
+	"description": "Sophia as one pi extension: gardend's graph tools over MCP, the workspace prompt, tool profiles and a budget guard.",
+	"license": "MIT",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=22.19.0"
+	},
+	"exports": {
+		".": {
+			"sophia-source": "./src/index.ts",
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"LICENSE"
+	],
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"test": "node --conditions=sophia-source --test test/*.test.ts"
+	},
+	"dependencies": {
+		"@earendil-works/pi-ai": "1.2.0",
+		"@earendil-works/pi-coding-agent": "1.2.0",
+		"@earendil-works/pi-mcp": "1.2.0"
+	}
+}

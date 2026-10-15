@@ -1,0 +1,23 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://sophia-labs.dev/schemas/vehicle-ride/v2/create-session.request.json",
+	"title": "POST /sessions",
+	"type": "object",
+	"required": ["requestId"],
+	"properties": {
+		"requestId": { "type": "string", "minLength": 1, "maxLength": 256 },
+		"graphId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,199}$", "description": "Optional and redundant: the session's graph is the one gardend bound the request to (x-graph-id, from /g/<graph>/sessions). A different value is refused." },
+		"profile": { "enum": ["chat", "agent"], "default": "chat", "description": "agent: an isolated body with a working folder and pi's read, write, edit and bash; the graph's owner only (403 forbidden_profile), and only where the host can isolate it (503 isolation_unavailable)" },
+		"model": { "type": "string", "pattern": "^[^/]+/.+$", "description": "provider/model, e.g. openrouter/openai/gpt-6-luna" },
+		"title": { "type": "string", "maxLength": 200 },
+		"claim": { "type": "boolean", "default": true },
+		"budget": {
+			"type": "object",
+			"properties": {
+				"maxTurns": { "type": "integer", "minimum": 1, "maximum": 1000 },
+				"maxCostUsd": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 }
+			},
+			"additionalProperties": false
+		}
+	}
+}

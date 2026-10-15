@@ -1,0 +1,38 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://sophia-labs.dev/schemas/vehicle-ride/v2/event.json",
+	"title": "A durable ride event (watch, SSE, events.jsonl)",
+	"type": "object",
+	"required": ["seq", "ts", "type", "payload"],
+	"additionalProperties": false,
+	"properties": {
+		"seq": { "type": "integer", "minimum": 1 },
+		"ts": { "type": "string" },
+		"type": {
+			"enum": [
+				"session.created", "session.revived", "session.shutdown", "session.forked", "session.cloned",
+				"session.renamed", "session.deleted",
+				"body.materialized", "body.dormant", "body.exited", "body.notice",
+				"lease.claimed", "lease.renewed", "lease.released", "lease.revoked", "lease.expired",
+				"command.accepted", "command.delivered", "command.completed", "command.aborted", "command.failed", "command.cancelled", "command.interrupted",
+				"run.started", "run.ended", "run.settled", "run.error",
+				"message.completed", "tool.started", "tool.result",
+				"queue.updated", "queue.stranded", "budget.exceeded",
+				"room.policy", "chime.received", "chime.resolved",
+				"compaction.started", "compaction.ended", "retry.started", "extension.error", "abort.slow",
+				"mirror.written", "mirror.failed"
+			]
+		},
+		"payload": { "type": "object" }
+	},
+	"allOf": [
+		{ "if": { "properties": { "type": { "pattern": "^command\\." } } }, "then": { "properties": { "payload": { "required": ["commandId"] } } } },
+		{ "if": { "properties": { "type": { "const": "run.started" } } }, "then": { "properties": { "payload": { "required": ["runId", "tools"] } } } },
+		{ "if": { "properties": { "type": { "const": "run.settled" } } }, "then": { "properties": { "payload": { "required": ["aborted"] } } } },
+		{ "if": { "properties": { "type": { "const": "message.completed" } } }, "then": { "properties": { "payload": { "required": ["role"] } } } },
+		{ "if": { "properties": { "type": { "const": "lease.revoked" } } }, "then": { "properties": { "payload": { "required": ["clientId", "by", "reason"], "properties": { "reason": { "const": "takeover" } } } } } },
+		{ "if": { "properties": { "type": { "const": "session.renamed" } } }, "then": { "properties": { "payload": { "required": ["title"], "properties": { "title": { "type": ["string", "null"], "maxLength": 200 } } } } } },
+		{ "if": { "properties": { "type": { "const": "session.deleted" } } }, "then": { "properties": { "payload": { "required": ["trashedAs"] } } } },
+		{ "if": { "properties": { "type": { "enum": ["mirror.written", "mirror.failed"] } } }, "then": { "properties": { "payload": { "required": ["documentId"] } } } }
+	]
+}

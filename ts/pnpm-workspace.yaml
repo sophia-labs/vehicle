@@ -1,0 +1,13 @@
+packages:
+  - packages/*
+
+# pi is pinned exactly and never forked (principle 1 in the README). pi-coding-agent
+# depends on its siblings with ^ ranges; these overrides hold every sibling at the same release.
+overrides:
+  "@earendil-works/pi-coding-agent": 1.2.0
+  "@earendil-works/pi-agent-core": 1.2.0
+  "@earendil-works/pi-ai": 1.2.0
+  "@earendil-works/pi-codemode": 1.2.0
+  "@earendil-works/pi-mcp": 1.2.0
+  "@earendil-works/pi-tui": 1.2.0
+  "@earendil-works/pi-telemetry": 1.2.0

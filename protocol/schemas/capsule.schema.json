@@ -1,0 +1,62 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://sophia-labs.dev/schemas/vehicle-ride/v2/capsule.json",
+	"title": "sophia.vehicle-session-capsule.v2",
+	"type": "object",
+	"required": ["schema", "sessionId", "graphId", "profile", "access", "model", "status", "cursor", "lease", "budget", "commandSummary", "milestones", "omittedMilestones", "transcript", "omittedTranscriptItems", "authority"],
+	"additionalProperties": false,
+	"properties": {
+		"schema": { "const": "sophia.vehicle-session-capsule.v2" },
+		"sessionId": { "type": "string" },
+		"graphId": { "type": "string" },
+		"profile": { "enum": ["chat", "agent"] },
+		"isolation": { "enum": ["none", "bwrap", "seatbelt", "microvm"] },
+		"access": { "enum": ["read", "write"] },
+		"model": { "type": "string" },
+		"parent": { "type": "object", "required": ["sessionId", "kind"] },
+		"status": { "enum": ["running", "idle", "dormant"] },
+		"cursor": { "type": "integer", "minimum": 0 },
+		"lease": {
+			"anyOf": [
+				{ "type": "null" },
+				{ "type": "object", "required": ["clientId", "claimedAt", "expiresAt"], "additionalProperties": false, "properties": { "clientId": { "type": "string" }, "claimedAt": { "type": "string" }, "expiresAt": { "type": "string" } } }
+			]
+		},
+		"budget": { "type": "object", "required": ["maxTurns", "maxCostUsd"] },
+		"commandSummary": {
+			"type": "object",
+			"required": ["counts", "recent"],
+			"properties": {
+				"counts": { "type": "object", "additionalProperties": { "type": "integer" } },
+				"recent": {
+					"type": "array",
+					"maxItems": 16,
+					"items": {
+						"type": "object",
+						"required": ["commandId", "op", "status", "acceptedAt"],
+						"not": { "anyOf": [{ "required": ["text"] }, { "required": ["contextRefs"] }] }
+					}
+				}
+			}
+		},
+		"milestones": {
+			"type": "array",
+			"maxItems": 128,
+			"items": { "type": "object", "required": ["seq", "ts", "type", "payload"], "properties": { "payload": { "not": { "anyOf": [{ "required": ["text"] }, { "required": ["args"] }] } } } }
+		},
+		"omittedMilestones": { "type": "integer", "minimum": 0 },
+		"transcript": {
+			"type": "array",
+			"maxItems": 32,
+			"items": {
+				"type": "object",
+				"required": ["entryId", "role"],
+				"properties": { "role": { "enum": ["user", "assistant", "toolResult"] }, "text": { "type": "string", "maxLength": 4096 } },
+				"if": { "properties": { "role": { "const": "user" } } },
+				"then": { "required": ["chars"], "not": { "required": ["text"] } }
+			}
+		},
+		"omittedTranscriptItems": { "type": "integer", "minimum": 0 },
+		"authority": { "type": "object", "required": ["mode", "mutations"], "properties": { "mutations": { "const": false } } }
+	}
+}

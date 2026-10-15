@@ -1,0 +1,21 @@
+{
+  "document_id": "demo-doc",
+  "title": "Vehicle Demo Garden Doc",
+  "blocks": [
+    {
+      "block_id": "block-intro",
+      "kind": "paragraph",
+      "text": "Vehicle is a local cockpit for one Pi agent."
+    },
+    {
+      "block_id": "block-neovim",
+      "kind": "paragraph",
+      "text": "Neovim owns Garden document editing."
+    },
+    {
+      "block_id": "block-boundary",
+      "kind": "paragraph",
+      "text": "Garden stores collaboration state, not PTY bytes."
+    }
+  ]
+}
