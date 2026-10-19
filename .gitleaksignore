@@ -1,0 +1,2 @@
+# test constant, not a credential (a fixed secret the vehicle-host tests use against a loopback server)
+ts/packages/vehicle-host/test/harness.ts:generic-api-key:16
