@@ -168,6 +168,20 @@ describe("a tool called by its bare name", () => {
 	});
 });
 
+describe("scanned PDFs", () => {
+	it("hands every role the scan text layer, and only writers the OCR start, each named in the prompt", () => {
+		assert.ok(chatTools("read").includes("scan_text_layer"));
+		assert.ok(!chatTools("read").includes("read_scan_text"));
+		assert.ok(chatTools("write").includes("read_scan_text") && chatTools("write").includes("scan_text_layer"));
+		assert.ok(WRITE_TOOLS.has("read_scan_text") && !WRITE_TOOLS.has("scan_text_layer"));
+		const viewer = sophiaPrompt({ graphId: "g", role: "viewer" });
+		const editor = sophiaPrompt({ graphId: "g", role: "editor" });
+		assert.match(viewer.tools, /`scan_text_layer` says where reading a scanned PDF stands/);
+		assert.doesNotMatch(viewer.tools, /read_scan_text/);
+		assert.match(editor.tools, /`read_scan_text` reads a scanned PDF's text when its pages are pictures/);
+	});
+});
+
 describe("tools and budget", () => {
 	it("allows a viewer's chat only the reader's graph tools, never a built-in", () => {
 		const allow = sophiaToolAllowlist({ role: "viewer", gardend: { url: "http://127.0.0.1:1/mcp" } });

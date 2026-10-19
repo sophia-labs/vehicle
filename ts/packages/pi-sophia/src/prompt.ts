@@ -163,7 +163,13 @@ export function sophiaPrompt(input: SophiaPromptInput): SophiaPrompt {
 	const toolLines = [
 		"Your tools (call them by these names; you have no others):",
 		...line(family("find").title, tools("find"), findSentence),
-		...line(family("read").title, tools("read")),
+		...line(
+			family("read").title,
+			tools("read"),
+			has("scan_text_layer")
+				? `${code("scan_text_layer")} says where reading a scanned PDF stands and, once done, gives its words, each with its box on the page.`
+				: "",
+		),
 		...(tools("history").length > 0
 			? [`- ${family("history").title}: ${list(tools("history"))} show every saved version of a document.`]
 			: []),
@@ -181,6 +187,9 @@ export function sophiaPrompt(input: SophiaPromptInput): SophiaPrompt {
 							? `${code("write_document")} replaces a whole document; to keep JSON, code or other exact text byte for byte, put it in a fenced code block and pass ${arg("format")} "markdown".`
 							: "",
 						has("delete_document") ? `${code("delete_document")} deletes a whole document and its history with it.` : "",
+						has("read_scan_text")
+							? `${code("read_scan_text")} reads a scanned PDF's text when its pages are pictures; it runs in the background, so check ${has("scan_text_layer") ? code("scan_text_layer") : "back"} for the words.`
+							: "",
 					),
 					...(has("edit_comment")
 						? [

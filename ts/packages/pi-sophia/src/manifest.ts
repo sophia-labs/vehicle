@@ -58,7 +58,8 @@ export const TOOL_FAMILIES: readonly ToolFamily[] = Object.freeze([
 	{
 		id: "read",
 		title: "Read",
-		read: ["read_document", "read_blocks", "get_block", "query_blocks", "document_digest"],
+		// scan_text_layer: where reading a scanned PDF stands and, when done, its words with their boxes
+		read: ["read_document", "read_blocks", "get_block", "query_blocks", "document_digest", "scan_text_layer"],
 		write: [],
 	},
 	{ id: "history", title: "History", read: ["get_document_history", "read_document_at_snapshot"], write: [] },
@@ -76,6 +77,8 @@ export const TOOL_FAMILIES: readonly ToolFamily[] = Object.freeze([
 			"edit_block_text",
 			"delete_blocks",
 			"delete_document",
+			// starts OCR of a scanned PDF in the background; the words are kept beside the document
+			"read_scan_text",
 		],
 	},
 	{ id: "comments", title: "Comments", read: [], write: ["edit_comment"] },
