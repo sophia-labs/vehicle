@@ -5,6 +5,8 @@ surface. A person in the chat panel, a person in a terminal, a person in Neovim 
 same **ride protocol**. They share the same rules: one driver at a time, attributed chimes from everyone else, and
 sessions that outlive any process.
 
+This is the canonical repository for Vehicle; see [CONTRIBUTING.md](CONTRIBUTING.md) to build and test it.
+
 This repository holds:
 
 | path | what |
