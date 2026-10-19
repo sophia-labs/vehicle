@@ -46,6 +46,8 @@ export interface Harness {
 	 */
 	readonly byokFaux: FauxProviderHandle;
 	readonly byokRuntimes: ModelRuntime[];
+	/** The host's own model runtime (a test may point a provider somewhere and give it a key). */
+	readonly modelRuntime: ModelRuntime;
 	readonly url: string;
 	call(method: string, path: string, body?: unknown, who?: Identity, signal?: AbortSignal): Promise<Reply>;
 	events(sessionId: string, since?: number, who?: Identity): Promise<RideEvent[]>;
@@ -198,6 +200,7 @@ export async function startHost(options: {
 		faux,
 		byokFaux,
 		byokRuntimes,
+		modelRuntime,
 		url,
 		call,
 		events,

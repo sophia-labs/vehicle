@@ -10,6 +10,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fauxAssistantMessage } from "@earendil-works/pi-ai";
+import { mirrorSkipReason } from "../src/index.ts";
 import { account, createSession, DRIVER, type Harness, startHost, visitor } from "./harness.ts";
 
 const COSTLY = [{ id: "faux-1", cost: { input: 1000, output: 1000, cacheRead: 0, cacheWrite: 0 } }];
@@ -137,6 +138,26 @@ describe("public sessions: the two doors", () => {
 		const ownerSession = await createSession(harness, {}, { ...DRIVER, extra: { "x-sophia-public-graphs": "uruguay-catalogue" } });
 		const ownerMeta = JSON.parse(readFileSync(join(harness.dataDir, "sessions", ownerSession, "meta.json"), "utf8"));
 		assert.equal(ownerMeta.graphs, undefined);
+	});
+
+	it("lets a signed-in account on its visitors' folder graph be a contributor: a writer, never mirrored; nobody else", async () => {
+		const base = account("66666666-7777-8888-9999-000000000000", true, { "x-model-key": KEY });
+		const contributor = { ...base, role: "contributor" as const };
+		const sessionId = await createSession(harness, {}, contributor);
+		const meta = JSON.parse(readFileSync(join(harness.dataDir, "sessions", sessionId, "meta.json"), "utf8"));
+		assert.equal(meta.role, "contributor");
+		const seen = await harness.call("GET", `/sessions/${sessionId}`, undefined, contributor);
+		assert.equal(seen.status, 200);
+		assert.equal(seen.body.value.session.access, "write");
+		// Never mirrored: a visitor's chat is not a public document (W6: a contributor writes only in the folder).
+		assert.match(mirrorSkipReason("contributor") ?? "", /visitors' folder/);
+		assert.equal(mirrorSkipReason("editor"), undefined);
+		assert.match(mirrorSkipReason("viewer") ?? "", /cannot write/);
+		// An anonymous visitor is never a contributor, whatever its headers say.
+		const forged = { ...visitor("efefefefefefefefefefefef", { "x-model-key": KEY }), role: "contributor" as const };
+		const refused = await harness.call("POST", "/sessions", { requestId: "forged-contributor" }, forged);
+		assert.equal(refused.status, 400);
+		assert.equal(refused.body.code, "invalid_identity");
 	});
 
 	it("lists a visitor's conversations to that visitor only", async () => {

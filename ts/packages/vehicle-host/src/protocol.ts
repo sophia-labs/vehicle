@@ -171,13 +171,15 @@ export function parseCaller(headers: Record<string, string | string[] | undefine
 	const clientId = one(HEADERS.clientId);
 	if (!principal) throw new RideError("identity_required", 401, `${HEADERS.principal} is required`);
 	if (!isSophiaRole(role)) {
-		throw new RideError("invalid_identity", 400, `${graphId ? HEADERS.graphRole : HEADERS.callerRole} must be owner, editor or viewer`);
+		throw new RideError("invalid_identity", 400, `${graphId ? HEADERS.graphRole : HEADERS.callerRole} must be owner, editor, contributor or viewer`);
 	}
 	if (graphId !== undefined && !GRAPH_ID.test(graphId)) throw new RideError("invalid_identity", 400, `${HEADERS.graphId} is not a graph id`);
 	const kind = one(HEADERS.callerKind);
 	if (kind !== undefined && kind !== "anonymous" && kind !== "account") throw new RideError("invalid_identity", 400, `${HEADERS.callerKind} must be anonymous or account`);
-	// A public caller reads, whatever else the request says: gardend mints it a viewer.
-	if (kind && role !== "viewer") throw new RideError("invalid_identity", 400, "a public caller is a viewer");
+	// A public caller reads, whatever else the request says: gardend mints it a viewer, or (a signed-in account on the
+	// graph with its visitors' folder) a contributor, whose writes gardend fences to that folder.
+	if (kind && role !== "viewer" && role !== "contributor") throw new RideError("invalid_identity", 400, "a public caller is a viewer or a contributor");
+	if (role === "contributor" && kind !== "account") throw new RideError("invalid_identity", 400, "only a signed-in account is a contributor");
 	if (kind === "anonymous" && !principal.startsWith("anon:")) throw new RideError("invalid_identity", 400, "an anonymous caller is anon:<id>");
 	if (kind === "account" && !principal.startsWith("cognito:")) throw new RideError("invalid_identity", 400, "an account is cognito:<sub>");
 	const email = kind === "account" ? one(HEADERS.accountEmail) : undefined;

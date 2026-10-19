@@ -4,8 +4,9 @@
  *
  * Channels, and what crosses each:
  *   fd 3 (a pipe, host to body, closed by both sides as soon as it is read): the bootstrap. The session's settings
- *        and the model key for its provider. The key never sits in the body's environment (which its shell inherits
- *        and Linux shows in /proc/<pid>/environ), its arguments or any file; the pipe is gone before any tool runs.
+ *        and a grant on the host's model proxy (`./model-proxy.ts`): a base URL and a token for this body's model
+ *        calls. The model key itself never enters the box; the proxy adds it on the host. The token is in neither
+ *        the environment, the arguments nor any file, and the pipe is gone before any tool runs.
  *   stdin/stdout: pi's RPC records. Commands (`prompt`, `steer`, `follow_up`, `abort`, `clear_queue`,
  *        `get_state`, `get_session_stats`) and their responses; pi's session events; and pi's extension-UI records,
  *        which carry the delegation token: before every request to gardend's `/mcp`, the body's MCP client asks
@@ -44,7 +45,7 @@ export interface BodyExit {
 export interface RpcBodyOptions {
 	readonly launch: BoxLaunch;
 	readonly isolation: string;
-	/** Sent once over fd 3. Holds the model key: never logged. */
+	/** Sent once over fd 3. Holds the model proxy's token for this body: never logged. */
 	readonly bootstrap: Record<string, unknown>;
 	/** The newest delegation token for this session (memory only), or none. */
 	readonly getToken: () => string | undefined;

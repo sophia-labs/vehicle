@@ -487,7 +487,9 @@ export class SessionMirror {
 			const created = !state.created;
 			if (created) {
 				await this.options.folders.ensure(this.options.graphId, call);
-				await call("create_document", { documentId: state.documentId, title, parentId: CONVERSATIONS_FOLDER.id });
+				// "keep": a create whose reply was lost (or a lost mirror.json) finds the document already there and
+				// leaves it where the person may have moved it; gardend refuses a create over an existing id otherwise.
+				await call("create_document", { documentId: state.documentId, title, parentId: CONVERSATIONS_FOLDER.id, ifExists: "keep" });
 				state.created = new Date().toISOString();
 				state.title = title;
 				this.save(state);

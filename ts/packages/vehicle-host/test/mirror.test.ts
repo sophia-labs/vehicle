@@ -11,7 +11,7 @@
  */
 
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, renameSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fauxAssistantMessage, fauxToolCall } from "@earendil-works/pi-ai";
@@ -129,6 +129,26 @@ describe("the session mirror against a real gardend", { skip: GARDEND_BIN ? fals
 		assert.deepEqual((await conversationsFolder()).map((doc) => doc.title), ["What the workspace holds"]);
 		const rename = gardend.audit().filter((row) => row.category === "mcp.tools.call" && row.action === "rename");
 		assert.equal(rename.at(-1)?.actor, "owner");
+	});
+
+	it("keeps the document where the person put it when the host lost word of its create", async () => {
+		// gardend refuses a create over an existing document (2026-10-14); the mirror asks it to keep the one there.
+		const documentId = mirrorDocumentId(mainSession);
+		await ownerTool("create_folder", { folderId: "kept-conversations", name: "Kept" });
+		await ownerTool("move_documents", { documentIds: [documentId], parentId: "kept-conversations" });
+		// A create whose reply was lost leaves mirror.json without `created`: the next write creates again.
+		const statePath = join(harness.dataDir, "sessions", mainSession, "mirror.json");
+		const state = JSON.parse(readFileSync(statePath, "utf8"));
+		assert.ok(state.created, JSON.stringify(state));
+		delete state.created;
+		writeFileSync(statePath, JSON.stringify(state));
+		harness.faux.setResponses([fauxAssistantMessage("An answer after the lost reply.")]);
+		const events = await turn(harness, mainSession, owner, "Are you still there?");
+		assert.equal(events.at(-1)?.type, "mirror.written", JSON.stringify(events));
+		const kept = (await ownerTool("get_workspace", { folderId: "kept-conversations", depth: 1 })).documents as { id: string; title: string }[];
+		assert.deepEqual(kept.map((doc) => [doc.id, doc.title]), [[documentId, "What the workspace holds"]], "left where the person put it, its title kept");
+		assert.match((await readMirror(mainSession)).content, /An answer after the lost reply\./);
+		await ownerTool("move_documents", { documentIds: [documentId], parentId: CONVERSATIONS_FOLDER.id });
 	});
 
 	it("hands a deleted conversation's document to the client for the Trash; a restored session keeps it current", async () => {

@@ -26,6 +26,7 @@ import { ModelRuntime, SessionManager } from "@earendil-works/pi-coding-agent";
 import { type GardendMcpOptions, isSophiaProfile, isSophiaRole, normalizeBudget, type SophiaBudget } from "@sophia-labs/pi-sophia";
 import { type BoxTier, type IsolationSetting, isolationSetting, probeTier, settingRefusal } from "./isolation.ts";
 import { appendJsonl, readJsonl } from "./logs.ts";
+import { ModelProxy } from "./model-proxy.ts";
 import { type Caller, digestOf, frame, RideError, requireId } from "./protocol.ts";
 import { MirrorFolders, mirrorDocumentId, personText } from "./mirror.ts";
 import { DEFAULT_PUBLIC_SETTINGS, isPublicCaller, PublicPolicy, type PublicSettings } from "./public.ts";
@@ -121,6 +122,8 @@ function agentBodies(dataDir: string, options: AgentBodyOptions, modelRuntime: M
 	// hidden from a box, not just this service's data.
 	const hidden = basename(dirname(dataDir)) === "services" ? [dirname(dirname(dataDir))] : [];
 	let probed: Promise<string | undefined> | undefined;
+	// The model proxy (`./model-proxy.ts`), started with the first agent body.
+	let proxy: Promise<ModelProxy> | undefined;
 	const probe = async (): Promise<string | undefined> => {
 		const before = settingRefusal(isolation);
 		if (before || isolation.tier === "none") return before;
@@ -149,7 +152,22 @@ function agentBodies(dataDir: string, options: AgentBodyOptions, modelRuntime: M
 		hidden,
 		...(mcpUrl ? { mcpUrl } : {}),
 		faux: options.faux === true,
-		modelKey: async (provider) => (await modelRuntime.getAuth(provider))?.auth.apiKey ?? undefined,
+		modelGrant: async (sessionId, model) => {
+			proxy ??= ModelProxy.start();
+			return (await proxy).grant(sessionId, {
+				upstream: () => {
+					const { provider, id } = model();
+					const found = modelRuntime.getModel(provider, id);
+					return found ? { api: found.api, baseUrl: found.baseUrl, id: found.id } : undefined;
+				},
+				key: async () => (await modelRuntime.getAuth(model().provider))?.auth.apiKey ?? undefined,
+			});
+		},
+		close: async () => {
+			const started = proxy;
+			proxy = undefined;
+			if (started) await (await started).close();
+		},
 		...(options.startTimeoutMs ? { startTimeoutMs: options.startTimeoutMs } : {}),
 	};
 }
@@ -505,8 +523,9 @@ export class VehicleHost {
 	}
 
 	/** Stop every body (an isolated one ends its box); resolves once they are gone. */
-	close(): Promise<void> {
-		return Promise.all([...this.sessions.values()].map((session) => session.close())).then(() => undefined);
+	async close(): Promise<void> {
+		await Promise.all([...this.sessions.values()].map((session) => session.close()));
+		await this.services.agent?.close();
 	}
 
 	/** Resolves once no session mirror is writing (at most `timeoutMs`): before the process exits. */

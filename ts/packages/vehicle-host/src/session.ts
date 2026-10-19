@@ -44,6 +44,7 @@ import {
 } from "@sophia-labs/pi-sophia";
 import { InProcessBody, type PiBody } from "./body.ts";
 import { type BoxTier, type IsolationSetting, planBox } from "./isolation.ts";
+import type { ModelGrant } from "./model-proxy.ts";
 import { appendJsonl, EventLog, type RideEvent, readJsonl } from "./logs.ts";
 import { type MirrorFolders, personText, SessionMirror } from "./mirror.ts";
 import { findPiSessionFile } from "./pi-files.ts";
@@ -174,7 +175,7 @@ type LogRow =
 
 /**
  * How `agent` bodies start on this host (`./host.ts` builds it from the settings): the isolation tier, the body's
- * code, and the model key for a provider. Absent: this host makes no agent bodies.
+ * code, and the model proxy that calls the model for them. Absent: this host makes no agent bodies.
  */
 export interface AgentBodies {
 	readonly isolation: IsolationSetting;
@@ -192,8 +193,13 @@ export interface AgentBodies {
 	readonly mcpUrl?: string;
 	/** A test setting: the body answers with pi's faux provider (`./body-faux.ts`). */
 	readonly faux: boolean;
-	/** The key pi would use for this provider on the host, handed to the body over its bootstrap pipe. */
-	modelKey(provider: string): Promise<string | undefined>;
+	/**
+	 * A grant on the host's model proxy (`./model-proxy.ts`) for one body of a session: the base URL its model calls
+	 * go to and the token that stands in for the key there. The key stays on the host; `model` is read at each call.
+	 */
+	modelGrant(sessionId: string, model: () => { readonly provider: string; readonly id: string }): Promise<ModelGrant>;
+	/** Stop the model proxy (the host is closing). */
+	close(): Promise<void>;
 	readonly startTimeoutMs?: number;
 }
 
@@ -259,6 +265,15 @@ const boundedJson = (value: unknown, maxBytes: number): unknown => {
 	return Buffer.byteLength(text) <= maxBytes ? value : { truncated: true, preview: bounded(text, maxBytes) };
 };
 
+/** Why a conversation is not mirrored into the workspace, or undefined when it is. */
+export function mirrorSkipReason(role: SessionMeta["role"]): string | undefined {
+	if (accessForRole(role) === "read") return "a viewer's conversation cannot write to the workspace, so it is not mirrored there";
+	if (role === "contributor") {
+		return "a visitor's conversation is not mirrored into the workspace; to keep it, ask Sophia to write it as a note in the visitors' folder";
+	}
+	return undefined;
+}
+
 export class RideSession {
 	private currentMeta: SessionMeta;
 	/** Where the record lives: `sessions/<id>/`, or its place in `trash/` once deleted. */
@@ -313,7 +328,7 @@ export class RideSession {
 		this.mirror = new SessionMirror({
 			url: services.gardend?.url,
 			enabled: services.mirror.enabled,
-			skipReason: accessForRole(meta.role) === "read" ? "a viewer's conversation cannot write to the workspace, so it is not mirrored there" : undefined,
+			skipReason: mirrorSkipReason(meta.role),
 			graphId: meta.graphId,
 			folders: services.mirror.folders,
 			dir: () => this.dir,
@@ -1164,8 +1179,9 @@ export class RideSession {
 
 	/**
 	 * An `agent` body: `pi --mode rpc` in a box of the host's isolation tier, working in the session's own folder.
-	 * Refused (`isolation_unavailable`) when this host cannot isolate it; the model key goes over the bootstrap
-	 * pipe, the delegation token over pi's RPC channel (`./rpc-body.ts`).
+	 * Refused (`isolation_unavailable`) when this host cannot isolate it. The model key never goes to the body: it
+	 * gets a grant on the host's model proxy over the bootstrap pipe (a base URL and a token for this body only), and
+	 * the delegation token over pi's RPC channel (`./rpc-body.ts`).
 	 */
 	private async materializeAgent(): Promise<Body> {
 		const agent = this.services.agent;
@@ -1204,6 +1220,7 @@ export class RideSession {
 		});
 		const resumed = findPiSessionFile(piDir) !== undefined;
 		let started: RpcBody | undefined;
+		const grant = await agent.modelGrant(this.meta.sessionId, () => this.meta.model);
 		const body = await RpcBody.start({
 			launch,
 			isolation: tier,
@@ -1217,7 +1234,7 @@ export class RideSession {
 				workdir,
 				piDir,
 				isolation: tier,
-				modelKey: await agent.modelKey(this.meta.model.provider),
+				modelProxy: { baseUrl: grant.baseUrl, token: grant.token },
 				faux: agent.faux,
 			},
 			getToken: () => this.#delegatedToken,
@@ -1231,9 +1248,13 @@ export class RideSession {
 				if (started) this.onBodyExit(started, exit);
 			},
 			afterExit: () => {
+				grant.revoke();
 				if (tier !== "bwrap") rmSync(tmpDir, { recursive: true, force: true });
 			},
 			...(agent.startTimeoutMs ? { startTimeoutMs: agent.startTimeoutMs } : {}),
+		}).catch((error: unknown) => {
+			grant.revoke();
+			throw error;
 		});
 		started = body;
 		const unsubscribe = body.subscribe((event) => this.onPiEvent(event));

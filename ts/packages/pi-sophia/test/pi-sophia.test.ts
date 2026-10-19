@@ -41,6 +41,23 @@ describe("the manifest and the prompt", () => {
 		}
 	});
 
+	it("tells a contributor it writes only inside the visitors' folder", () => {
+		const prompt = sophiaPrompt({ graphId: "cow-tools-guide", role: "contributor" });
+		assert.match(prompt.text, /they are a visitor, so you can read and search it, and write only inside its visitors' folder/);
+		assert.match(prompt.text, /The workspace refuses any other change, so do not try one/);
+		const editor = sophiaPrompt({ graphId: "g", role: "editor" });
+		assert.match(editor.text, /they are an editor, so you can read, search and change it\./);
+	});
+
+	it("hands every role find, and says when to ask it rather than search_documents", () => {
+		for (const access of ["read", "write"] as const) assert.ok(chatTools(access).includes("find"), access);
+		const prompt = sophiaPrompt({ graphId: "uruguay-catalogue", role: "viewer" });
+		assert.match(prompt.tools, /`find` finds data: the datasets, codes, places, people/);
+		assert.match(prompt.tools, /ask it first when the question is about data rather than about the documents/);
+		const old = sophiaPrompt({ graphId: "g", role: "viewer", tools: ["read_document", "search_documents"] });
+		assert.doesNotMatch(old.text, /`find`/, "a gardend without find is not told about it");
+	});
+
 	it("leaves out what the live cell does not serve", () => {
 		const prompt = sophiaPrompt({ graphId: "g-1", role: "viewer", tools: ["read_document", "search_documents"] });
 		assert.match(prompt.text, /`search_documents`/);
@@ -57,7 +74,8 @@ describe("the manifest and the prompt", () => {
 		assert.match(prompt.rules, /Search before you give up/);
 		assert.doesNotMatch(prompt.text, /voice|credit|Choreograph/i);
 		const writer = sophiaPrompt({ graphId: "g", role: "owner" });
-		assert.match(writer.tools, /author` "Sophia"/);
+		assert.match(writer.tools, /gardend signs it with the person you act for/);
+		assert.doesNotMatch(writer.tools, /author` "Sophia"/, "comments are signed by gardend, not by the model");
 		assert.match(writer.rules, /Read before you write/);
 		assert.doesNotMatch(writer.text, /graphId|graph_id/);
 	});

@@ -8,8 +8,10 @@
  * `main` is not used: it would read settings, trust, extensions and skills from the home folder and from the
  * working folder, which the agent writes.
  *
- * 1. The bootstrap arrives on fd 3 and fd 3 is closed: the session's settings and the model key, which goes into
- *    pi's model runtime and nowhere else (not the environment, which the body's shell would inherit).
+ * 1. The bootstrap arrives on fd 3 and fd 3 is closed: the session's settings and a grant on the host's model
+ *    proxy (`./model-proxy.ts`): a base URL for this session and a token. The model key never comes here. The base
+ *    URL replaces the provider's in this body's model runtime and the token stands in for the key, so pi's model
+ *    calls go to the host, which adds the key outside the box. The token is good for this body's model calls only.
  * 2. The delegation token is asked for before every request to gardend's `/mcp`, over pi's extension-UI channel
  *    (an `input` request titled `sophia.delegated-token`), so the host always hands the newest one.
  * 3. The tool list (after pi-sophia set it for the run) and a budget stop go to the host as extension statuses.
@@ -64,7 +66,8 @@ interface Bootstrap {
 	readonly workdir: string;
 	readonly piDir: string;
 	readonly isolation: string;
-	modelKey?: string;
+	/** Where this body's model calls go, and the token that stands in for the key there. */
+	readonly modelProxy?: { readonly baseUrl: string; readonly token: string };
 	/** A test setting: pi's faux provider answers, scripted by the user's words (`./body-faux.ts`). */
 	readonly faux?: boolean;
 }
@@ -132,9 +135,12 @@ if (boot.faux) {
 	const { installBodyFaux } = await import("./body-faux.ts");
 	installBodyFaux(modelRuntime);
 }
-if (boot.modelKey) await modelRuntime.setRuntimeApiKey(boot.model.provider, boot.modelKey);
-// The key now lives in pi's model runtime only.
-delete boot.modelKey;
+if (boot.modelProxy) {
+	// Every model of the provider now calls the host's proxy (pi's `/chat/completions`, `/v1/messages` or
+	// `/responses` under the session's base URL); the faux provider calls nothing.
+	if (!boot.faux) modelRuntime.registerProvider(boot.model.provider, { baseUrl: boot.modelProxy.baseUrl });
+	await modelRuntime.setRuntimeApiKey(boot.model.provider, boot.modelProxy.token);
+}
 const model = modelRuntime.getModel(boot.model.provider, boot.model.id);
 if (!model) fail(`model ${boot.model.provider}/${boot.model.id} is not available in the body`);
 

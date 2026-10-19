@@ -9,7 +9,8 @@
  * the model is offered.
  */
 
-export type SophiaRole = "owner" | "editor" | "viewer";
+/** `contributor`: a signed-in visitor of a public Sophia, who writes only inside its visitors' folder (gardend's fence). */
+export type SophiaRole = "owner" | "editor" | "contributor" | "viewer";
 export type SophiaAccess = "read" | "write";
 /**
  * `chat`: graph tools only, pi's built-ins disabled; the body runs in the host's process.
@@ -45,6 +46,8 @@ export const TOOL_FAMILIES: readonly ToolFamily[] = Object.freeze([
 			"search_documents",
 			"search_blocks",
 			"semantic_search",
+			// gardend's entity search over the graph's own RDF (where its owner turned it on)
+			"find",
 			"list_documents",
 			"get_workspace",
 			"quick_orient",
@@ -150,7 +153,7 @@ export const EXCLUDED_TOOLS: readonly string[] = Object.freeze([
 /** A chat cannot do its job without these. */
 export const REQUIRED_TOOLS: readonly string[] = Object.freeze(["read_document", "search_documents"]);
 
-const ROLES: ReadonlySet<string> = new Set(["owner", "editor", "viewer"]);
+const ROLES: ReadonlySet<string> = new Set(["owner", "editor", "contributor", "viewer"]);
 
 export function isSophiaRole(value: unknown): value is SophiaRole {
 	return typeof value === "string" && ROLES.has(value);

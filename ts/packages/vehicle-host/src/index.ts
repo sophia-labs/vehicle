@@ -2,6 +2,7 @@ export * from "./body.ts";
 export * from "./capsule.ts";
 export * from "./host.ts";
 export * from "./isolation.ts";
+export * from "./model-proxy.ts";
 export * from "./logs.ts";
 export * from "./mirror.ts";
 export * from "./protocol.ts";

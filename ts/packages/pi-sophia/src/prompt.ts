@@ -3,7 +3,8 @@
  * (its `workspace-chat-v1` prompt) with its substance kept: every tool it
  * names (always in backticks) is one the session is handed, every tool it is handed is named, and every rule
  * in "How to work" comes from a failure seen in a real session. Dropped: the hosted runtime's internals and the
- * model's "voice" (comments are signed "Sophia"). Added: the bound workspace (gardend binds it: the tools take no
+ * model's "voice": gardend signs comments itself, with the person the session acts for "via vehicle"
+ * (an `author` argument is kept only as an unverified claim). Added: the bound workspace (gardend binds it: the tools take no
  * workspace argument) and the datasheets (documents first, datasheets too; never a refusal for a missing one).
  *
  * pi carries it as structured prompt sections: the intro is the preamble, the tool list and the rules are
@@ -76,7 +77,12 @@ export function sophiaPrompt(input: SophiaPromptInput): SophiaPrompt {
 		const found = family(id);
 		return (part === "all" ? [...found.read, ...found.write] : [...found.read]).filter((tool) => handed.has(tool));
 	};
-	const whom = input.role === "owner" ? "its owner" : "an editor";
+	const whom = input.role === "owner" ? "its owner" : input.role === "contributor" ? "a visitor" : "an editor";
+	/** What the person's permissions let the assistant change. */
+	const change =
+		input.role === "contributor"
+			? "so you can read and search it, and write only inside its visitors' folder: new notes there, and changes to the notes this visitor wrote. The workspace refuses any other change, so do not try one; say so instead"
+			: "so you can read, search and change it";
 	const othersEarly = (input.graphs ?? []).filter((graph) => graph !== input.graphId);
 	/** Where the assistant is: one workspace, or (a public session) every workspace it reads, its own first. */
 	const where =
@@ -96,7 +102,7 @@ export function sophiaPrompt(input: SophiaPromptInput): SophiaPrompt {
 	const intro = (
 		writes
 			? [
-					`You are Sophia, the assistant in the workspace "${input.graphId}". You act for the person you are talking with, with their permissions here: they are ${whom}, so you can read, search and change it.`,
+					`You are Sophia, the assistant in the workspace "${input.graphId}". You act for the person you are talking with, with their permissions here: they are ${whom}, ${change}.`,
 					"Change things when the person asks you to. For anything large, or anything that removes text, say what you will do before you do it.",
 				]
 			: access === "write"
@@ -130,6 +136,9 @@ export function sophiaPrompt(input: SophiaPromptInput): SophiaPrompt {
 		has("search_documents") ? `${code("search_documents")} finds documents by title and text` : "",
 		has("search_blocks") ? `${code("search_blocks")} finds passages` : "",
 		has("semantic_search") ? `${code("semantic_search")} finds by meaning` : "",
+		has("find")
+			? `${code("find")} finds data: the datasets, codes, places, people and other things in the workspace's own RDF, by meaning and in any language; ask it first when the question is about data rather than about the documents, then read a hit's facts with ${has("sparql_query") ? code("sparql_query") : "its link"}`
+			: "",
 		has("list_documents") && has("get_workspace")
 			? `${code("list_documents")} and ${code("get_workspace")} show what is here and the folder tree`
 			: has("list_documents")
@@ -175,7 +184,7 @@ export function sophiaPrompt(input: SophiaPromptInput): SophiaPrompt {
 					),
 					...(has("edit_comment")
 						? [
-								`- ${family("comments").title}: ${code("edit_comment")} creates, resolves or deletes a comment. Sign comments you write with ${arg("author")} "Sophia".`,
+								`- ${family("comments").title}: ${code("edit_comment")} creates, resolves or deletes a comment. gardend signs it with the person you act for, via this session; pass no ${arg("author")}.`,
 							]
 						: []),
 					...(tools("folders").length > 0
