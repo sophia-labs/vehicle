@@ -80,6 +80,16 @@ describe("the manifest and the prompt", () => {
 		assert.doesNotMatch(writer.text, /graphId|graph_id/);
 	});
 
+	it("hands a writer the workflow plan tools, and tells it a plan is composed, never written as prose", () => {
+		assert.ok(chatTools("read").includes("workflow_plan_read"))
+		for (const tool of ["workflow_plan_create", "workflow_plan_compose"]) assert.ok(chatTools("write").includes(tool), tool)
+		const writer = sophiaPrompt({ graphId: "freud-dreams", role: "editor" })
+		assert.match(writer.tools, /`workflow_plan_compose` changes it with moves and a one-line `rationale`/)
+		assert.match(writer.tools, /never as prose in the workflow's body/)
+		const reader = sophiaPrompt({ graphId: "freud-dreams", role: "viewer" })
+		assert.doesNotMatch(reader.tools, /workflow_plan_compose/)
+	});
+
 	it("removes a wire the way gardend takes it: type \"wires\" and its wireId", () => {
 		const writer = sophiaPrompt({ graphId: "g", role: "editor" });
 		for (const text of [writer.tools, writer.rules]) {
@@ -167,7 +177,7 @@ describe("tools and budget", () => {
 		}
 		for (const builtin of ["read", "bash", "edit", "write"]) assert.ok(SOPHIA_EXCLUDED_BUILTINS.includes(builtin));
 		assert.deepEqual(sophiaToolAllowlist({ role: "owner" }), []);
-		assert.equal(TOOL_FAMILIES.length, 11);
+		assert.equal(TOOL_FAMILIES.length, 12);
 	});
 
 	it("hands an agent the graph tools and pi's read, write, edit and bash; a chat none of them", () => {

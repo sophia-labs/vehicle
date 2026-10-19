@@ -215,6 +215,13 @@ export function sophiaPrompt(input: SophiaPromptInput): SophiaPrompt {
 		...(tools("values").length > 0
 			? [`- ${family("values").title} (how much a block matters to the person): ${list(tools("values"))}.`]
 			: []),
+		...(tools("workflows").length > 0
+			? [
+					writes && has("workflow_plan_compose")
+						? `- ${family("workflows").title}: a workflow is a document whose body says so; its plan is RDF that gardend keeps beside it. ${code("workflow_plan_read")} shows the plan and what it still lacks; ${code("workflow_plan_compose")} changes it with moves and a one-line ${arg("rationale")}, and the person watches each move land in the workflow pane${has("workflow_plan_create") ? `; ${code("workflow_plan_create")} makes a new one` : ""}. When the person asks you to plan or change a workflow, write the plan this way, never as prose in the workflow's body. The person approves and runs it; you never run it.`
+						: `- ${family("workflows").title}: ${code("workflow_plan_read")} shows the plan of a workflow (a document whose body says it is one).`,
+				]
+			: []),
 		...(writes
 			? artifactNames.length > 0 || has("custom_css")
 				? [

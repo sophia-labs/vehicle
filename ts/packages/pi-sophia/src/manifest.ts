@@ -87,6 +87,14 @@ export const TOOL_FAMILIES: readonly ToolFamily[] = Object.freeze([
 		write: ["create_wires", "delete"],
 	},
 	{ id: "values", title: "Values", read: ["get_values", "get_block_values", "get_important_blocks"], write: ["value"] },
+	// A workflow is a document whose plan is RDF gardend keeps beside it (its body says so). The plan changes only through
+	// compose moves the person watches land in the workflow pane, never as raw RDF and never as prose in the body.
+	{
+		id: "workflows",
+		title: "Workflows",
+		read: ["workflow_plan_read"],
+		write: ["workflow_plan_create", "workflow_plan_compose"],
+	},
 	{
 		id: "artifacts",
 		title: "HTML artifacts",
