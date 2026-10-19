@@ -82,7 +82,8 @@ describe("the manifest and the prompt", () => {
 
 	it("hands a writer the workflow plan tools, and tells it a plan is composed, never written as prose", () => {
 		assert.ok(chatTools("read").includes("workflow_plan_read"))
-		for (const tool of ["workflow_plan_create", "workflow_plan_compose"]) assert.ok(chatTools("write").includes(tool), tool)
+		for (const tool of ["workflow_plan_create", "workflow_plan_compose", "workflow_plan_publish"]) assert.ok(chatTools("write").includes(tool), tool)
+		assert.match(sophiaPrompt({ graphId: "freud-dreams", role: "owner" }).tools, /`workflow_plan_publish` puts its verified findings in the margin[^.]*: only when the person asks/)
 		const writer = sophiaPrompt({ graphId: "freud-dreams", role: "editor" })
 		assert.match(writer.tools, /`workflow_plan_compose` changes it with moves and a one-line `rationale`/)
 		assert.match(writer.tools, /never as prose in the workflow's body/)

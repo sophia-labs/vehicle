@@ -93,7 +93,7 @@ export const TOOL_FAMILIES: readonly ToolFamily[] = Object.freeze([
 		id: "workflows",
 		title: "Workflows",
 		read: ["workflow_plan_read"],
-		write: ["workflow_plan_create", "workflow_plan_compose"],
+		write: ["workflow_plan_create", "workflow_plan_compose", "workflow_plan_publish"],
 	},
 	{
 		id: "artifacts",
