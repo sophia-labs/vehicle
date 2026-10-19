@@ -49,6 +49,14 @@ jobs:
           node-version: "22.19"
           cache: pnpm
           cache-dependency-path: ts/pnpm-lock.yaml
+      # vehicle-host's tests make real bwrap boxes. The Ubuntu 24.04 runner ships
+      # without bubblewrap, and AppArmor lets a program make user namespaces only
+      # when its profile says so: this grants that to /usr/bin/bwrap alone.
+      - name: Install bubblewrap
+        run: |
+          sudo apt-get update && sudo apt-get install -y bubblewrap
+          printf 'abi <abi/4.0>,\ninclude <tunables/global>\nprofile bwrap /usr/bin/bwrap flags=(unconfined) {\n  userns,\n}\n' | sudo tee /etc/apparmor.d/bwrap >/dev/null
+          sudo apparmor_parser -r /etc/apparmor.d/bwrap
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
