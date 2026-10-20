@@ -86,6 +86,8 @@ describe("the manifest and the prompt", () => {
 		assert.match(sophiaPrompt({ graphId: "freud-dreams", role: "owner" }).tools, /`workflow_plan_publish` puts its verified findings in the margin[^.]*: only when the person asks/)
 		const writer = sophiaPrompt({ graphId: "freud-dreams", role: "editor" })
 		assert.match(writer.tools, /`workflow_plan_compose` changes it with moves and a one-line `rationale`/)
+		assert.match(writer.tools, /a source \(`upsert_source`[^)]*\) and give each step that reads it `reads`/)
+		assert.match(writer.tools, /a destination \(`upsert_destination`/)
 		assert.match(writer.tools, /never as prose in the workflow's body/)
 		const reader = sophiaPrompt({ graphId: "freud-dreams", role: "viewer" })
 		assert.doesNotMatch(reader.tools, /workflow_plan_compose/)
