@@ -90,6 +90,9 @@ export const TOOL_FAMILIES: readonly ToolFamily[] = Object.freeze([
 		write: ["create_wires", "delete"],
 	},
 	{ id: "values", title: "Values", read: ["get_values", "get_block_values", "get_important_blocks"], write: ["value"] },
+	// A type is a class the workspace defines in Emporium (graph-resident and versioned); its objects draw as cards
+	// anywhere, embed in documents, and are what a workflow step hands back when the step names it.
+	{ id: "types", title: "Types", read: ["emporium_vocab", "emporium_describe"], write: ["propose_domain_ontology"] },
 	// A workflow is a document whose plan is RDF gardend keeps beside it (its body says so). The plan changes only through
 	// compose moves the person watches land in the workflow pane, never as raw RDF and never as prose in the body.
 	{
@@ -144,7 +147,6 @@ export const EXCLUDED_TOOLS: readonly string[] = Object.freeze([
 	"source_push",
 	"source_rebuild",
 	"flow_seed_board",
-	"propose_domain_ontology",
 	"context_bundle",
 	"music",
 	"recall",

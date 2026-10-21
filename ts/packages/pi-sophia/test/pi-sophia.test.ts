@@ -101,6 +101,16 @@ describe("the manifest and the prompt", () => {
 		}
 	});
 
+	it("teaches an owner types, a step's itemClass and an embedded object; a viewer only reads types", () => {
+		const owner = sophiaPrompt({ graphId: "freud-dreams", role: "owner" });
+		assert.match(owner.tools, /`propose_domain_ontology` with `classes` defines one or extends it/);
+		assert.match(owner.tools, /give it `itemClass` \("<vocab>:<Class>"\) instead of `itemSchema`/);
+		assert.match(owner.tools, /`insert_blocks` an `objectEmbed` block/);
+		const viewer = sophiaPrompt({ graphId: "freud-dreams", role: "viewer" });
+		assert.doesNotMatch(viewer.tools, /propose_domain_ontology|itemClass/);
+		assert.match(viewer.tools, /- Types \(kinds of thing the workspace keeps\): `emporium_vocab`, `emporium_describe`/);
+	});
+
 	it("hands every role the datasheets: documents first, datasheets too, and never a refusal for a missing one", () => {
 		for (const access of ["read", "write"] as const) assert.ok(chatTools(access).includes("datasheet_facts"), access);
 		for (const role of ["viewer", "editor", "owner"] as const) {
@@ -194,7 +204,7 @@ describe("tools and budget", () => {
 		}
 		for (const builtin of ["read", "bash", "edit", "write"]) assert.ok(SOPHIA_EXCLUDED_BUILTINS.includes(builtin));
 		assert.deepEqual(sophiaToolAllowlist({ role: "owner" }), []);
-		assert.equal(TOOL_FAMILIES.length, 12);
+		assert.equal(TOOL_FAMILIES.length, 13);
 	});
 
 	it("hands an agent the graph tools and pi's read, write, edit and bash; a chat none of them", () => {
